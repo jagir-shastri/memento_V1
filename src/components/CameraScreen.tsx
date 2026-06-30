@@ -26,7 +26,7 @@ export default function CameraScreen({
 }: CameraScreenProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(1); // 1 to 4
+  const currentPhotoNumber = Math.min(capturedPhotos.length + 1, photoCount);
   const [countdown, setCountdown] = useState(5); // 5 to 0
   const [isCapturing, setIsCapturing] = useState(false);
   const [flashActive, setFlashActive] = useState(false);
@@ -34,35 +34,30 @@ export default function CameraScreen({
 
   // Main capturing flow controller
   useEffect(() => {
+    if (!cameraStream) return;
+
     if (!isIntermission && !isCapturing && capturedPhotos.length < photoCount) {
       setIsCapturing(true);
       setCountdown(5);
     }
-  }, [isCapturing, isIntermission, capturedPhotos.length, photoCount]);
+  }, [isCapturing, isIntermission, capturedPhotos.length, photoCount, cameraStream]);
 
+  // Countdown ticker effect
   useEffect(() => {
-    let countdownInterval: NodeJS.Timeout;
+    if (!isCapturing) return;
 
-    if (isCapturing) {
-      countdownInterval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            triggerShutterCapture();
-            return 0;
-          }
-          // Tick sound
-          audioSynth.playBeep(prev === 2 ? 660 : 440, 0.08);
-          return prev - 1;
-        });
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown((prev) => prev - 1);
+        // Beep sound
+        audioSynth.playBeep(countdown === 2 ? 660 : 440, 0.08);
       }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      triggerShutterCapture();
     }
-
-    return () => {
-      if (countdownInterval) clearInterval(countdownInterval);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCapturing]);
+  }, [isCapturing, countdown]);
 
   // Capture frame from stream or render simulated graphics
   const triggerShutterCapture = () => {
@@ -104,13 +99,15 @@ export default function CameraScreen({
       }
     }
 
-    // Fallback placeholder generation (adds retro flair for simulation)
+    // Since we want a production ready application, if cameraStream is not working or active, we do not proceed.
     if (!photoDataUrl) {
-      photoDataUrl = generateSimulatedPhoto(currentPhotoIndex, selectedFilter);
+      console.error("Camera connection is offline or inaccessible; capture aborted.");
+      setIsCapturing(false);
+      return;
     }
 
     const newPhoto: CapturedPhoto = {
-      id: `photo-${Date.now()}-${currentPhotoIndex}`,
+      id: `photo-${Date.now()}-${capturedPhotos.length + 1}`,
       dataUrl: photoDataUrl,
       timestamp: Date.now()
     };
@@ -124,7 +121,6 @@ export default function CameraScreen({
       setIsIntermission(true);
       setTimeout(() => {
         setIsIntermission(false);
-        setCurrentPhotoIndex((prev) => prev + 1);
         setCountdown(5);
       }, 2000);
     } else {
@@ -213,6 +209,28 @@ export default function CameraScreen({
     return canvas.toDataURL('image/png');
   };
 
+  if (!cameraStream) {
+    return (
+      <div className="w-full max-w-xl mx-auto px-6 py-12 flex flex-col items-center justify-center min-h-[70vh] text-center select-none">
+        <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-6 shadow-lg shadow-red-500/5">
+          <Camera className="w-10 h-10 animate-pulse" />
+        </div>
+        <h2 className="text-2xl font-serif text-stone-100 mb-3" style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}>
+          Camera Connection Lost
+        </h2>
+        <p className="text-stone-400 text-sm leading-relaxed mb-8 max-w-md">
+          The video stream could not be established or was disconnected. A physical camera input is required to operate the photo booth.
+        </p>
+        <button
+          onClick={onCancel}
+          className="px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-stone-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95"
+        >
+          Return to Setup Screen
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-4 flex flex-col justify-center min-h-[85vh]">
       {/* White Full Screen Shutter Flash Overlay */}
@@ -240,7 +258,7 @@ export default function CameraScreen({
               Recording Active
             </span>
             <span className="text-amber-400 font-mono font-medium text-sm bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-              Photo {currentPhotoIndex} of {photoCount}
+              Photo {currentPhotoNumber} of {photoCount}
             </span>
           </div>
 
@@ -362,7 +380,7 @@ export default function CameraScreen({
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <h4 className="text-emerald-400 font-semibold text-lg font-sans">Snapshot Saved!</h4>
-                  <p className="text-stone-400 text-xs mt-1">Get ready for pose 0{currentPhotoIndex + 1}...</p>
+                  <p className="text-stone-400 text-xs mt-1">Get ready for pose 0{capturedPhotos.length + 1}...</p>
                 </motion.div>
               )}
             </AnimatePresence>

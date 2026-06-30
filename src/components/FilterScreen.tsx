@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Camera, Layers, Play, LayoutGrid, ChevronDown, Sliders } from 'lucide-react';
 import { FilterOption, StripTheme, GridLayout } from '../types';
@@ -145,15 +145,24 @@ export default function FilterScreen({
       }
     } catch (err: any) {
       console.warn("Camera initialization warning (using high-fidelity simulation fallback):", err.message || err);
+      const reason = err?.name || err?.message || 'Unknown error';
       setCameraError(
-        "Could not detect or initialize your camera. Please ensure permissions are granted and no other application is using your camera."
+        `Camera unavailable: ${reason}. Check that permission is granted, that no other app has the camera open, and that this page is loaded over HTTPS or http://localhost.`
       );
     } finally {
       setIsInitializing(false);
     }
   };
 
+  // Guards against React StrictMode's dev-only double-invoke of this effect.
+  // Without this, two concurrent getUserMedia() calls fire on mount, which
+  // makes many webcam drivers fail to start the video source for BOTH calls
+  // (TrackStartError/NotReadableError) even though the camera is healthy.
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     initCamera();
     return () => {
       // Retain stream active for instant capture transition!
@@ -246,6 +255,11 @@ export default function FilterScreen({
                     <p className="text-stone-400 text-xs leading-relaxed mb-4 max-w-sm">
                       A high-fidelity photo-booth simulation is fully active! You can select filters, configure print styles, and run complete shooting sessions with retro assets.
                     </p>
+                    {cameraError && (
+                      <p className="text-red-400 text-[11px] font-mono leading-relaxed bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4 max-w-sm">
+                        {cameraError}
+                      </p>
+                    )}
                     <div className="flex flex-col gap-2 items-center w-full">
                       <button 
                         onClick={() => initCamera()}
@@ -351,11 +365,16 @@ export default function FilterScreen({
           {/* Capture Trigger */}
           <button
             id="start-capture-btn"
-            onClick={handleProceed}
-            className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-zinc-950 font-bold tracking-widest text-sm uppercase transition-all duration-300 shadow-[0_6px_24px_rgba(245,158,11,0.25)] hover:shadow-[0_8px_32px_rgba(245,158,11,0.4)] flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+            onClick={cameraStream ? handleProceed : undefined}
+            disabled={!cameraStream}
+            className={`w-full py-4.5 px-6 rounded-2xl font-bold tracking-widest text-sm uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
+              cameraStream
+                ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-zinc-950 shadow-[0_6px_24px_rgba(245,158,11,0.25)] hover:shadow-[0_8px_32px_rgba(245,158,11,0.4)] cursor-pointer active:scale-98'
+                : 'bg-zinc-900 border border-zinc-800 text-stone-500 cursor-not-allowed opacity-60'
+            }`}
           >
-            <Play className="w-4 h-4 fill-zinc-950" />
-            Launch Booth Session
+            <Play className={`w-4 h-4 ${cameraStream ? 'fill-zinc-950 text-zinc-950' : 'text-stone-500'}`} />
+            {cameraStream ? 'Launch Booth Session' : 'Camera Required to Launch'}
           </button>
         </div>
       </div>
