@@ -58,6 +58,16 @@ export const FILTERS: FilterOption[] = [
 
 export const STRIP_THEMES: StripTheme[] = [
   {
+    id: 'classic-white',
+    name: 'Classic Studio White',
+    bgClass: 'bg-white',
+    textClass: 'text-zinc-900',
+    borderClass: 'border-zinc-300',
+    accentClass: 'bg-zinc-100',
+    primaryColor: '#ffffff',
+    secondaryColor: '#18181b' // zinc-900
+  },
+  {
     id: 'royal-gold',
     name: 'Royal Obsidian & Gold',
     bgClass: 'bg-zinc-950',
@@ -66,26 +76,6 @@ export const STRIP_THEMES: StripTheme[] = [
     accentClass: 'bg-amber-500/20',
     primaryColor: '#09090b', // zinc-950
     secondaryColor: '#f59e0b' // amber-500
-  },
-  {
-    id: 'classic-midnight',
-    name: 'Midnight Pearl',
-    bgClass: 'bg-black',
-    textClass: 'text-amber-300',
-    borderClass: 'border-zinc-800',
-    accentClass: 'bg-zinc-900',
-    primaryColor: '#000000',
-    secondaryColor: '#fcd34d' // amber-300
-  },
-  {
-    id: 'luxury-ivory',
-    name: 'Ivory Cream & Gold',
-    bgClass: 'bg-stone-100',
-    textClass: 'text-stone-800',
-    borderClass: 'border-amber-600/30',
-    accentClass: 'bg-amber-600/5',
-    primaryColor: '#f5f5f4', // stone-100
-    secondaryColor: '#b45309' // amber-700
   }
 ];
 
@@ -95,20 +85,6 @@ export const GRID_LAYOUTS: GridLayout[] = [
     name: 'Classic 4-Cut',
     description: 'Traditional vertical photo booth layout with 4 portraits.',
     photoCount: 4,
-    columns: 1
-  },
-  {
-    id: 'grid-2x2',
-    name: 'Modern 2×2 Collage',
-    description: 'A stylish square format ideal for couples and groups.',
-    photoCount: 4,
-    columns: 2
-  },
-  {
-    id: 'minimal-3',
-    name: 'Elegant Trio',
-    description: 'Clean, spacious layout focusing on 3 high-quality shots.',
-    photoCount: 3,
     columns: 1
   }
 ];

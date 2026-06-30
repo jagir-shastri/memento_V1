@@ -32,23 +32,18 @@ export default function CameraScreen({
   const [flashActive, setFlashActive] = useState(false);
   const [isIntermission, setIsIntermission] = useState(false);
 
-  // Bind stream to video element
-  useEffect(() => {
-    if (videoRef.current && cameraStream) {
-      videoRef.current.srcObject = cameraStream;
-    }
-  }, [cameraStream]);
-
   // Main capturing flow controller
   useEffect(() => {
-    let countdownInterval: NodeJS.Timeout;
-    
     if (!isIntermission && !isCapturing && capturedPhotos.length < photoCount) {
       setIsCapturing(true);
       setCountdown(5);
     }
+  }, [isCapturing, isIntermission, capturedPhotos.length, photoCount]);
 
-    if (isCapturing && countdown > 0) {
+  useEffect(() => {
+    let countdownInterval: NodeJS.Timeout;
+
+    if (isCapturing) {
       countdownInterval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -66,7 +61,8 @@ export default function CameraScreen({
     return () => {
       if (countdownInterval) clearInterval(countdownInterval);
     };
-  }, [isCapturing, countdown, isIntermission, capturedPhotos.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCapturing]);
 
   // Capture frame from stream or render simulated graphics
   const triggerShutterCapture = () => {
@@ -103,8 +99,8 @@ export default function CameraScreen({
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
           photoDataUrl = canvas.toDataURL('image/png');
         }
-      } catch (err) {
-        console.error("Frame grab failure, falling back to simulated snapshot:", err);
+      } catch (err: any) {
+        console.warn("Frame grab fallback to simulated snapshot:", err.message || err);
       }
     }
 
@@ -253,7 +249,12 @@ export default function CameraScreen({
             {/* Mirroring video stream */}
             {cameraStream ? (
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  videoRef.current = el;
+                  if (el) {
+                    el.srcObject = cameraStream;
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
@@ -274,21 +275,59 @@ export default function CameraScreen({
             <div className="absolute inset-0 bg-radial-vignette pointer-events-none" />
 
             {/* Big Centered Countdown Number */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {isCapturing && countdown > 0 && (
                 <motion.div
-                  key={`cnt-${countdown}`}
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: [0.6, 1.2, 1], opacity: 1 }}
-                  exit={{ scale: 1.4, opacity: 0 }}
-                  transition={{ duration: 0.8, times: [0, 0.4, 1] }}
-                  className="absolute inset-0 flex items-center justify-center bg-black/35 z-10 select-none pointer-events-none"
+                  key="countdown-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center bg-black/45 z-10 select-none pointer-events-none"
                 >
                   <div className="flex flex-col items-center">
-                    <span className="text-9xl md:text-[11rem] font-bold font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 drop-shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
-                      {countdown}
-                    </span>
-                    <span className="text-amber-400/80 font-mono tracking-[0.25em] text-sm font-semibold uppercase mt-2">
+                    <div className="relative w-40 h-40 md:w-48 md:h-48 flex items-center justify-center">
+                      {/* Circular Timer progress ring matching reference image */}
+                      <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                        {/* Gray track ring */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          stroke="rgba(255, 255, 255, 0.2)"
+                          strokeWidth="2.5"
+                          fill="transparent"
+                        />
+                        {/* Golden indicator arc */}
+                        <motion.circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          stroke="#f59e0b" // amber-500
+                          strokeWidth="4"
+                          fill="transparent"
+                          strokeDasharray="263.89" // 2 * pi * r (2 * 3.14159 * 42)
+                          animate={{ strokeDashoffset: 263.89 * (1 - countdown / 5) }}
+                          transition={{ duration: 0.25, ease: "easeOut" }}
+                        />
+                      </svg>
+                      
+                      {/* Stylized Number in Bebas Neue with snappy pop enter/exit */}
+                      <AnimatePresence mode="popLayout">
+                        <motion.span
+                          key={countdown}
+                          initial={{ scale: 0.6, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 1.4, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="absolute text-7xl md:text-8xl font-bebas font-normal tracking-wide text-white drop-shadow-[0_4px_16px_rgba(245,158,11,0.5)] leading-none pt-2"
+                        >
+                          0{countdown}
+                        </motion.span>
+                      </AnimatePresence>
+                    </div>
+                    
+                    <span className="text-amber-400 font-mono tracking-[0.3em] text-xs font-bold uppercase mt-6 bg-black/60 px-4 py-1.5 rounded-full border border-amber-500/20">
                       Get Ready
                     </span>
                   </div>

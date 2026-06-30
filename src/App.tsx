@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, HelpCircle, Laptop, Camera, HelpCircle as HelpIcon, CheckCircle2 } from 'lucide-react';
 import { AppState, FilterOption, StripTheme, CapturedPhoto, GridLayout } from './types';
 import { FILTERS, STRIP_THEMES, GRID_LAYOUTS } from './constants';
 import WelcomeScreen from './components/WelcomeScreen';
@@ -22,7 +21,6 @@ export default function App() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
-  const [showOperatorPanel, setShowOperatorPanel] = useState(false);
 
   // Stop camera tracks on reset / clear stream
   const releaseCamera = () => {
@@ -84,71 +82,12 @@ export default function App() {
 
         {/* Dynamic State Badges */}
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-stone-400 text-[10px] font-mono uppercase tracking-wider select-none">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-stone-400 text-[10px] font-mono uppercase tracking-wider select-none">
             <span className={`w-2 h-2 rounded-full ${appState === 'CAPTURING' ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'} mr-1`} />
-            System Status: OK
+            {appState === 'CAPTURING' ? 'CAPTURE MODE' : 'SYSTEM READY'}
           </div>
-
-          <button
-            onClick={() => {
-              audioSynth.playBeep(440, 0.04);
-              setShowOperatorPanel(!showOperatorPanel);
-            }}
-            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-stone-400 hover:text-amber-400 hover:border-amber-500/30 transition-all cursor-pointer"
-            title="Kiosk Operators Manual"
-          >
-            <HelpCircle className="w-4.5 h-4.5" />
-          </button>
         </div>
       </header>
-
-      {/* Kiosk Operations Overlay */}
-      <AnimatePresence>
-        {showOperatorPanel && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="w-full bg-amber-500/10 border-b border-amber-500/25 p-5 md:p-6 text-stone-300 text-xs no-print relative z-50 backdrop-blur-md"
-          >
-            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h4 className="text-amber-400 font-bold uppercase tracking-wider font-mono mb-2 flex items-center gap-1.5">
-                  <Laptop className="w-4 h-4" />
-                  Kiosk Mode Settings
-                </h4>
-                <p className="leading-relaxed text-stone-400">
-                  Run browser in <strong>Fullscreen Mode</strong> (press <strong>F11</strong>). This hides address bars and maximizes vertical space, mimicking a premium retail camera enclosure.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-amber-400 font-bold uppercase tracking-wider font-mono mb-2 flex items-center gap-1.5">
-                  <Camera className="w-4 h-4" />
-                  Hardware Cameras
-                </h4>
-                <p className="leading-relaxed text-stone-400">
-                  Connect any standard wide-angle webcam or DSLR virtual stream. If camera access is blocked, check chrome site permissions. High-fidelity generative simulations will run if no hardware is present.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-amber-400 font-bold uppercase tracking-wider font-mono mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" />
-                  Printers & Outputs
-                </h4>
-                <p className="leading-relaxed text-stone-400">
-                  Configure your connected 2x6 photo strip or thermal receipt printer. Disable headers & footers in browser print settings. Layout renders at 300 DPI for pristine glossy prints.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowOperatorPanel(false)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-amber-400 text-sm font-semibold cursor-pointer"
-            >
-              × Close Panel
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col justify-center py-6 no-print">
@@ -233,7 +172,6 @@ export default function App() {
       {/* Footer Branding Bar */}
       <footer className="w-full border-t border-zinc-950 py-5 px-6 text-center text-stone-600 text-[10px] font-mono uppercase tracking-widest no-print select-none">
         <div>© {new Date().getFullYear()} Memento Photo Systems. All rights reserved.</div>
-        <div className="text-stone-700 mt-1">Designed for robust local mini PC kiosk deployment</div>
       </footer>
     </div>
   );

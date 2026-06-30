@@ -214,23 +214,33 @@ export default function PreviewScreen({ photos, selectedTheme, selectedLayout, o
         ctx.lineTo(canvas.width - 140, brandY + 40);
         ctx.stroke();
 
+        // Tiny minimalist camera icon above MEMENTO
+        ctx.strokeStyle = selectedTheme.secondaryColor;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(canvas.width / 2 - 20, brandY + 12, 40, 24);
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, brandY + 24, 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = selectedTheme.secondaryColor;
+        ctx.fillRect(canvas.width / 2 - 12, brandY + 7, 10, 5);
+
         // Primary Brand Text "MEMENTO"
         ctx.fillStyle = selectedTheme.secondaryColor;
-        ctx.font = "bold 64px 'Playfair Display', 'Georgia', serif";
+        ctx.font = "bold 60px 'Playfair Display', 'Georgia', serif";
         ctx.textAlign = 'center';
-        ctx.fillText("MEMENTO", canvas.width / 2, brandY + 110);
+        ctx.fillText("MEMENTO", canvas.width / 2, brandY + 115);
 
         ctx.strokeStyle = selectedTheme.secondaryColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(260, brandY + 140);
-        ctx.lineTo(canvas.width - 260, brandY + 140);
+        ctx.moveTo(260, brandY + 142);
+        ctx.lineTo(canvas.width - 260, brandY + 142);
         ctx.stroke();
 
-        // Tagline
-        ctx.fillStyle = selectedTheme.secondaryColor + 'bb'; // semi-transparent
-        ctx.font = "italic 22px 'Georgia', serif";
-        ctx.fillText("MEMORIES CAPTURED FOREVER", canvas.width / 2, brandY + 185);
+        // Tagline - Changed to "CREATE MEMORIES" with wide modern sans spacing
+        ctx.fillStyle = selectedTheme.secondaryColor + 'e8'; 
+        ctx.font = "bold 16px 'JetBrains Mono', monospace";
+        ctx.fillText("C R E A T E   M E M O R I E S", canvas.width / 2, brandY + 185);
 
         // Date Stamp
         const dateStr = new Date().toLocaleDateString('en-US', {
@@ -239,7 +249,7 @@ export default function PreviewScreen({ photos, selectedTheme, selectedLayout, o
           day: 'numeric'
         });
         ctx.fillStyle = selectedTheme.secondaryColor + '75';
-        ctx.font = "16px 'JetBrains Mono', monospace";
+        ctx.font = "14px 'JetBrains Mono', monospace";
         ctx.fillText(dateStr.toUpperCase(), canvas.width / 2, brandY + 230);
 
         // Save URL
@@ -464,14 +474,6 @@ export default function PreviewScreen({ photos, selectedTheme, selectedLayout, o
               </div>
 
             </div>
-          </div>
-
-          {/* Quick Hardware Checklist info */}
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4">
-            <h4 className="text-stone-300 text-xs font-mono font-semibold uppercase mb-1.5">Kiosk Operator Note</h4>
-            <p className="text-stone-500 text-[11px] leading-relaxed font-sans">
-              For standalone operation, set browser to <strong className="text-amber-500/70">Kiosk Mode</strong> (Fullscreen). In the system print dialog, enable "Landscape/Portrait" matching the strip and toggle "Hide headers and footers" for perfect glossy output.
-            </p>
           </div>
         </div>
 

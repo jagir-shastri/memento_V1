@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Camera, Layers, Paintbrush, Play, LayoutGrid, AlertCircle, RefreshCw, ChevronDown, Check, Sliders, Info, HelpCircle } from 'lucide-react';
+import { Camera, Layers, Play, LayoutGrid, ChevronDown, Sliders } from 'lucide-react';
 import { FilterOption, StripTheme, GridLayout } from '../types';
 import { FILTERS, STRIP_THEMES, GRID_LAYOUTS } from '../constants';
 import { audioSynth } from '../utils/audio';
@@ -37,11 +37,9 @@ export default function FilterScreen({
   selectedDeviceId,
   setSelectedDeviceId
 }: FilterScreenProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [showDslrGuide, setShowDslrGuide] = useState(false);
 
   // Retrieve available camera devices
   const updateDevicesList = async () => {
@@ -68,6 +66,30 @@ export default function FilterScreen({
     }
   };
 
+  // Helper: getUserMedia with timeout to prevent infinite hanging in sandboxed frames
+  const getUserMediaWithTimeout = async (constraints: MediaStreamConstraints, timeoutMs = 4000) => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Camera API not supported in this browser context");
+    }
+    
+    let timeoutId: NodeJS.Timeout;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error("Camera request timed out"));
+      }, timeoutMs);
+    });
+
+    try {
+      const stream = await Promise.race([
+        navigator.mediaDevices.getUserMedia(constraints),
+        timeoutPromise
+      ]);
+      return stream;
+    } finally {
+      clearTimeout(timeoutId!);
+    }
+  };
+
   // Initialize camera stream based on selected device ID with robust fallbacks
   const initCamera = async (deviceIdToUse?: string) => {
     setIsInitializing(true);
@@ -89,7 +111,7 @@ export default function FilterScreen({
       };
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia(primaryConstraints);
+        const stream = await getUserMediaWithTimeout(primaryConstraints);
         setCameraStream(stream);
         await updateDevicesList();
       } catch (firstErr) {
@@ -104,7 +126,7 @@ export default function FilterScreen({
         };
         
         try {
-          const stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+          const stream = await getUserMediaWithTimeout(fallbackConstraints);
           setCameraStream(stream);
           await updateDevicesList();
         } catch (secondErr) {
@@ -116,13 +138,13 @@ export default function FilterScreen({
             audio: false
           };
           
-          const stream = await navigator.mediaDevices.getUserMedia(absoluteFallbackConstraints);
+          const stream = await getUserMediaWithTimeout(absoluteFallbackConstraints);
           setCameraStream(stream);
           await updateDevicesList();
         }
       }
     } catch (err: any) {
-      console.error("Camera connection error:", err);
+      console.warn("Camera initialization warning (using high-fidelity simulation fallback):", err.message || err);
       setCameraError(
         "Could not detect or initialize your camera. Please ensure permissions are granted and no other application is using your camera."
       );
@@ -145,12 +167,6 @@ export default function FilterScreen({
     audioSynth.playBeep(480, 0.05);
     await initCamera(newDeviceId);
   };
-
-  useEffect(() => {
-    if (videoRef.current && cameraStream) {
-      videoRef.current.srcObject = cameraStream;
-    }
-  }, [cameraStream]);
 
   const handleFilterSelect = (filter: FilterOption) => {
     audioSynth.playBeep(440, 0.05);
@@ -189,63 +205,20 @@ export default function FilterScreen({
                 <Camera className="w-6 h-6 text-amber-500" />
                 Live Camera Feed
               </h2>
-              <p className="text-xs text-stone-400 mt-1">Configure your sensor and verify alignment</p>
+              <p className="text-xs text-stone-400 mt-1">Configure your camera and verify alignment</p>
             </div>
-
-            {/* Quick Canon assist link */}
-            <button
-              onClick={() => {
-                audioSynth.playBeep(450, 0.05);
-                setShowDslrGuide(!showDslrGuide);
-              }}
-              className="text-[11px] font-mono font-medium px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              {showDslrGuide ? "Hide Canon Guide" : "Canon DSLR Setup Guide"}
-            </button>
           </div>
-
-          {/* Canon DSLR Hardware setup guidelines drawer */}
-          <AnimatePresence>
-            {showDslrGuide && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden bg-gradient-to-r from-zinc-950 to-zinc-900 border border-amber-500/25 rounded-2xl p-5 shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
-              >
-                <h3 className="text-amber-400 font-bold uppercase tracking-wider font-mono text-xs mb-3 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  DSLR / Canon EOS Connection checklist
-                </h3>
-                <ul className="space-y-2.5 text-stone-300 text-xs">
-                  <li className="flex items-start gap-2">
-                    <span className="w-4 h-4 bg-amber-500/20 text-amber-400 font-mono flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">1</span>
-                    <span>Install the free <strong>Canon EOS Webcam Utility</strong> on your mini PC. This converts the camera's USB data line into a standard camera source.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-4 h-4 bg-amber-500/20 text-amber-400 font-mono flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">2</span>
-                    <span>Power the Canon DSLR via a **Dummy Battery power adapter** so it doesn't drain out during live events.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-4 h-4 bg-amber-500/20 text-amber-400 font-mono flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">3</span>
-                    <span>Set camera mode dial to <strong>Movie/Video mode</strong> (or manual exposure) and turn off any automatic power-save auto shut-off parameters in the camera's menu.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-4 h-4 bg-amber-500/20 text-amber-400 font-mono flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">4</span>
-                    <span>Plug in USB, start this app, and pick **"EOS Webcam Utility"** from the dropdown below!</span>
-                  </li>
-                </ul>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Premium Glass viewport wrapper */}
           <div className="relative aspect-video rounded-3xl overflow-hidden bg-zinc-950 border-2 border-amber-500/20 shadow-[0_16px_48px_rgba(0,0,0,0.8)] group">
             {/* Real Camera Video Tag */}
             {cameraStream && !cameraError ? (
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  if (el) {
+                    el.srcObject = cameraStream;
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
@@ -254,9 +227,9 @@ export default function FilterScreen({
               />
             ) : (
               // Realistic Premium Mock Video Stream if Web camera is not available
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-zinc-950 to-black select-none">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-zinc-950 to-zinc-900 select-none">
                 <div className="absolute top-4 left-4 flex items-center gap-1.5 text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full text-xs font-mono uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> simulation active
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Live Booth Simulator
                 </div>
 
                 {isInitializing ? (
@@ -269,20 +242,20 @@ export default function FilterScreen({
                     <div className="w-16 h-16 rounded-full bg-amber-500/5 border border-amber-500/20 flex items-center justify-center text-amber-500/80 mb-4">
                       <Camera className="w-8 h-8" />
                     </div>
-                    <h3 className="text-stone-200 font-serif text-lg mb-1.5">No Camera Hardware Selected</h3>
-                    <p className="text-stone-400 text-xs leading-relaxed mb-4">
-                      Ensure your camera is turned on, connected, and permissions are granted. In sandboxed environments, you may need to bypass the iframe.
+                    <h3 className="text-stone-200 font-serif text-lg mb-1.5">Interactive Simulator Mode</h3>
+                    <p className="text-stone-400 text-xs leading-relaxed mb-4 max-w-sm">
+                      A high-fidelity photo-booth simulation is fully active! You can select filters, configure print styles, and run complete shooting sessions with retro assets.
                     </p>
-                    <div className="flex flex-col gap-3 items-center w-full">
+                    <div className="flex flex-col gap-2 items-center w-full">
                       <button 
                         onClick={() => initCamera()}
-                        className="px-5 py-2.5 rounded-xl bg-amber-500 text-zinc-950 text-xs font-bold hover:bg-amber-400 transition-all cursor-pointer shadow-md active:scale-95"
+                        className="px-5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-stone-300 text-xs font-bold hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
                       >
-                        Connect Camera Input
+                        Retry Camera Connection
                       </button>
-                      <div className="text-[10px] text-amber-500/70 font-sans max-w-xs leading-normal bg-amber-500/5 px-3 py-2 rounded-lg border border-amber-500/15">
-                        💡 <strong>Sandbox Tip:</strong> If your built-in camera isn't launching, click the <strong>"Open in New Tab"</strong> button in the top bar of AI Studio. Web browsers block webcam access in side-by-side frames.
-                      </div>
+                      <p className="text-[10px] text-stone-500 max-w-xs mt-1">
+                        💡 Tip: If using the side-by-side preview, open the app in a <strong>New Tab</strong> to grant webcam permissions.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -321,7 +294,7 @@ export default function FilterScreen({
                 className="w-full bg-zinc-900 border border-zinc-800 text-stone-300 text-xs font-mono rounded-xl py-2.5 pl-3 pr-10 appearance-none focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
               >
                 {devices.length === 0 ? (
-                  <option value="">Default Kiosk Sensor</option>
+                  <option value="">Default Camera</option>
                 ) : (
                   devices.map((device, idx) => (
                     <option key={device.deviceId} value={device.deviceId}>
@@ -346,7 +319,7 @@ export default function FilterScreen({
             
             <h3 className="text-stone-200 text-xs uppercase tracking-widest font-bold font-mono mb-4 flex items-center gap-2">
               <Layers className="w-4 h-4 text-amber-500" />
-              01 • Select Art Filter
+              Select Art Filter
             </h3>
             
             <div className="grid grid-cols-2 gap-3">
@@ -369,115 +342,6 @@ export default function FilterScreen({
                     <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed group-hover:text-stone-400 transition-colors">
                       {filter.description}
                     </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section 2: Choose Grid Layout */}
-          <div className="bg-zinc-950/85 border border-zinc-900 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-
-            <h3 className="text-stone-200 text-xs uppercase tracking-widest font-bold font-mono mb-4 flex items-center gap-2">
-              <LayoutGrid className="w-4 h-4 text-amber-500" />
-              02 • Select Grid Layout
-            </h3>
-
-            <div className="grid grid-cols-1 gap-3">
-              {GRID_LAYOUTS.map((layout) => {
-                const isSelected = selectedLayout.id === layout.id;
-                return (
-                  <button
-                    key={layout.id}
-                    onClick={() => handleLayoutSelect(layout)}
-                    className={`flex items-start gap-4 p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer text-left ${
-                      isSelected
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-400 shadow-[0_4px_20px_rgba(245,158,11,0.15)]'
-                        : 'bg-zinc-900/40 border-zinc-800/80 text-stone-400 hover:bg-zinc-900 hover:border-zinc-700 hover:text-stone-200'
-                    }`}
-                  >
-                    {/* Visual Layout representation */}
-                    <div className="w-12 h-12 bg-zinc-950/80 border border-zinc-800 rounded-lg flex items-center justify-center shrink-0 p-1">
-                      {layout.id === 'vertical-4' && (
-                        <div className="grid grid-cols-1 gap-0.5 h-full w-4">
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                        </div>
-                      )}
-                      {layout.id === 'grid-2x2' && (
-                        <div className="grid grid-cols-2 gap-0.5 h-8 w-8">
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                        </div>
-                      )}
-                      {layout.id === 'minimal-3' && (
-                        <div className="grid grid-cols-1 gap-0.5 h-full w-4">
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                          <div className="bg-amber-500/40 rounded-[1px]" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex-grow">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs font-sans tracking-wide">{layout.name}</span>
-                        <span className="text-[9px] font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-amber-400">
-                          {layout.photoCount} Shots
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-stone-500 mt-1 leading-normal">
-                        {layout.description}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section 3: Strip Theme */}
-          <div className="bg-zinc-950/85 border border-zinc-900 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-
-            <h3 className="text-stone-200 text-xs uppercase tracking-widest font-bold font-mono mb-4 flex items-center gap-2">
-              <Paintbrush className="w-4 h-4 text-amber-500" />
-              03 • Select Paper Accent
-            </h3>
-
-            <div className="flex flex-col gap-3">
-              {STRIP_THEMES.map((theme) => {
-                const isSelected = selectedTheme.id === theme.id;
-                return (
-                  <button
-                    key={theme.id}
-                    onClick={() => handleThemeSelect(theme)}
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-400 shadow-[0_4px_20px_rgba(245,158,11,0.15)]'
-                        : 'bg-zinc-900/40 border-zinc-800/80 text-stone-400 hover:bg-zinc-900 hover:border-zinc-700 hover:text-stone-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Theme colors pill */}
-                      <div className={`flex w-9 h-6 rounded-lg overflow-hidden border border-zinc-850 ${theme.bgClass}`}>
-                        <div className="w-1/2 h-full" style={{ backgroundColor: theme.primaryColor }} />
-                        <div className="w-1/2 h-full border-l border-white/10" style={{ backgroundColor: theme.secondaryColor }} />
-                      </div>
-                      <span className="font-bold text-xs font-sans tracking-wide">{theme.name}</span>
-                    </div>
-
-                    {/* Dot status */}
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      isSelected ? 'border-amber-400 bg-amber-500/20' : 'border-zinc-700 bg-zinc-900'
-                    }`}>
-                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />}
-                    </div>
                   </button>
                 );
               })}

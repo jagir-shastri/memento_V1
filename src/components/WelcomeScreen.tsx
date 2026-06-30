@@ -56,21 +56,28 @@ export default function WelcomeScreen({ onProceed }: WelcomeScreenProps) {
           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium tracking-widest uppercase mb-6"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Kiosk Edition
+          STUDIO BOOTH
         </motion.div>
 
         {/* Brand Logo Header */}
-        <h1 
-          id="memento-logo-header"
-          className="text-6xl md:text-8xl font-serif tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 drop-shadow-[0_4px_12px_rgba(245,158,11,0.15)] select-none mb-4"
-          style={{ fontFamily: "'Playfair Display', 'Didot', serif" }}
-        >
-          MEMENTO
-        </h1>
-        
-        <p className="text-stone-400 font-sans tracking-wide text-lg md:text-xl mb-12 max-w-md">
-          Welcome. Let’s capture a memory.
-        </p>
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(245,158,11,0.4)] border border-amber-300/30">
+            <svg className="w-8 h-8 text-zinc-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+              <circle cx="12" cy="13" r="3" />
+            </svg>
+          </div>
+          <h1 
+            id="memento-logo-header"
+            className="text-6xl md:text-8xl font-serif tracking-[0.18em] mr-[-0.18em] text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 drop-shadow-[0_4px_12px_rgba(245,158,11,0.15)] select-none font-bold"
+            style={{ fontFamily: "'Playfair Display', 'Didot', serif" }}
+          >
+            MEMENTO
+          </h1>
+          <p className="text-amber-400/90 font-mono text-xs md:text-sm tracking-[0.5em] mr-[-0.5em] uppercase mt-3 font-semibold">
+            Create Memories
+          </p>
+        </div>
 
         {/* Interactive Payment Gateway Box */}
         <motion.div
@@ -100,24 +107,36 @@ export default function WelcomeScreen({ onProceed }: WelcomeScreenProps) {
                 exit={{ opacity: 0, y: -10 }}
                 className="flex flex-col items-center"
               >
-                {/* Simulated QR Code Canvas Placeholder */}
-                <div className="relative p-4 bg-white rounded-xl mb-6 shadow-lg border border-amber-500/20 group">
-                  <div className="w-40 h-40 flex items-center justify-center bg-stone-50 relative">
-                    {/* Nested SVG QR code design */}
-                    <svg className="w-36 h-36 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="2" y="2" width="6" height="6" />
-                      <rect x="2" y="16" width="6" height="6" />
-                      <rect x="16" y="2" width="6" height="6" />
-                      <rect x="9" y="9" width="6" height="6" />
-                      <path d="M9 2h3M13 2h1M13 6h1M9 16h2M13 16h1M2 13h4M16 13h6M19 16h3M16 20h2" />
-                    </svg>
-                    {/* Tiny golden lock in center */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-md bg-amber-500 border-2 border-white flex items-center justify-center shadow-md">
-                      <QrCode className="w-4.5 h-4.5 text-zinc-950" />
+                {/* Simulated QR Code Canvas Placeholder with golden light halo */}
+                <div className="relative mb-6 p-1 rounded-2xl bg-gradient-to-b from-amber-500/30 via-yellow-400/40 to-amber-600/30 shadow-[0_0_40px_rgba(245,158,11,0.45)] border border-amber-400/40 overflow-hidden">
+                  {/* Pulsating back glow */}
+                  <div className="absolute -inset-1 rounded-2xl bg-amber-500/10 blur-xl animate-pulse pointer-events-none" />
+
+                  <div className="relative p-4 bg-white rounded-xl overflow-hidden">
+                    {/* Laser scanning line - stylized in gold */}
+                    <motion.div 
+                      animate={{ y: [0, 160, 0] }}
+                      transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                      className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent shadow-[0_0_10px_#f59e0b] z-20"
+                    />
+
+                    <div className="w-40 h-40 flex items-center justify-center bg-stone-50 relative z-10">
+                      {/* Nested SVG QR code design */}
+                      <svg className="w-36 h-36 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="2" width="6" height="6" />
+                        <rect x="2" y="16" width="6" height="6" />
+                        <rect x="16" y="2" width="6" height="6" />
+                        <rect x="9" y="9" width="6" height="6" />
+                        <path d="M9 2h3M13 2h1M13 6h1M9 16h2M13 16h1M2 13h4M16 13h6M19 16h3M16 20h2" />
+                      </svg>
+                      {/* Tiny golden lock in center */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-md bg-amber-500 border-2 border-white flex items-center justify-center shadow-md">
+                        <QrCode className="w-4.5 h-4.5 text-zinc-950" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-[10px] text-zinc-500 mt-2 font-mono uppercase tracking-widest text-center">
-                    Scan using any UPI App
+                    <div className="text-[10px] text-zinc-500 mt-2 font-mono uppercase tracking-widest text-center relative z-10 font-bold">
+                      Scan using any UPI App
+                    </div>
                   </div>
                 </div>
 
