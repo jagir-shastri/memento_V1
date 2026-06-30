@@ -32,6 +32,13 @@ export default function CameraScreen({
   const [flashActive, setFlashActive] = useState(false);
   const [isIntermission, setIsIntermission] = useState(false);
 
+  // Assign the stream to the video element exactly once per stream change.
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream]);
+
   // Main capturing flow controller
   useEffect(() => {
     if (!cameraStream) return;
@@ -267,12 +274,7 @@ export default function CameraScreen({
             {/* Mirroring video stream */}
             {cameraStream ? (
               <video
-                ref={(el) => {
-                  videoRef.current = el;
-                  if (el) {
-                    el.srcObject = cameraStream;
-                  }
-                }}
+                ref={videoRef}
                 autoPlay
                 playsInline
                 muted

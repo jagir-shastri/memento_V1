@@ -40,6 +40,13 @@ export default function FilterScreen({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (previewVideoRef.current) {
+      previewVideoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream]);
 
   // Retrieve available camera devices
   const updateDevicesList = async () => {
@@ -223,11 +230,7 @@ export default function FilterScreen({
             {/* Real Camera Video Tag */}
             {cameraStream && !cameraError ? (
               <video
-                ref={(el) => {
-                  if (el) {
-                    el.srcObject = cameraStream;
-                  }
-                }}
+                ref={previewVideoRef}
                 autoPlay
                 playsInline
                 muted
